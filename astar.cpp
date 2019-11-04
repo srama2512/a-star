@@ -33,13 +33,18 @@ float l1_norm(int i0, int j0, int i1, int j1) {
   return std::abs(i0 - i1) + std::abs(j0 - j1);
 }
 
-// weights:        flattened h x w grid of costs
+// L_2 norm (euclidean distance)
+float l2_norm(int i0, int j0, int i1, int j1) {
+  return sqrt(pow(i0 - i1, 2) + pow(j0 - j1, 2));
+}
+
+// obmap:          flattened h x w grid obstacle map, 1 for obstacle, 0 for free
 // h, w:           height and width of grid
 // start, goal:    index of start/goal in flattened grid
 // diag_ok:        if true, allows diagonal moves (8-conn.)
 // paths (output): for each node, stores previous node in path
 extern "C" bool astar(
-      const float* weights, const int h, const int w,
+      const float* obmap, const int h, const int w,
       const int start, const int goal, bool diag_ok,
       int* paths) {
 
@@ -57,6 +62,7 @@ extern "C" bool astar(
   nodes_to_visit.push(start_node);
 
   int* nbrs = new int[8];
+  float nbrs_costs [8] = {sqrt(2), 1, sqrt(2), 1, 1, sqrt(2), 1, sqrt(2)};
 
   bool solution_found = false;
   while (!nodes_to_visit.empty()) {
@@ -84,19 +90,14 @@ extern "C" bool astar(
 
     float heuristic_cost;
     for (int i = 0; i < 8; ++i) {
-      if (nbrs[i] >= 0) {
+      // if the neighbor is within bounds and is not an obstacle
+      if (nbrs[i] >= 0 && obmap[nbrs[i]] == 0) {
         // the sum of the cost so far and the cost of this move
-        float new_cost = costs[cur.idx] + weights[nbrs[i]];
+        float new_cost = costs[cur.idx] + nbrs_costs[i];
         if (new_cost < costs[nbrs[i]]) {
           // estimate the cost to the goal based on legal moves
-          if (diag_ok) {
-            heuristic_cost = linf_norm(nbrs[i] / w, nbrs[i] % w,
-                                       goal    / w, goal    % w);
-          }
-          else {
-            heuristic_cost = l1_norm(nbrs[i] / w, nbrs[i] % w,
-                                     goal    / w, goal    % w);
-          }
+          heuristic_cost = l2_norm(nbrs[i] / w, nbrs[i] % w,
+                                   goal    / w, goal    % w);
 
           // paths with lower expected cost are explored first
           float priority = new_cost + heuristic_cost;

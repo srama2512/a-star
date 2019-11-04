@@ -7,8 +7,8 @@ from time import time
 from os.path import basename, join, splitext
 
 # input/output files
-MAZE_FPATH = join('mazes', 'maze_small.png')
-#MAZE_FPATH = join('mazes', 'maze_large.png')
+#MAZE_FPATH = join('mazes', 'maze_small.png')
+MAZE_FPATH = join('mazes', 'maze_large.png')
 OUTP_FPATH = join('solns', '%s_soln.png' % splitext(basename(MAZE_FPATH))[0])
 
 
@@ -21,22 +21,20 @@ def main():
         print('loaded maze of shape %r' % (maze.shape[0:2],))
 
     grid = cv2.cvtColor(maze, cv2.COLOR_BGR2GRAY).astype(np.float32)
-    grid[grid == 0] = np.inf
-    grid[grid == 255] = 1
-
-    assert grid.min() == 1, 'cost of moving must be at least 1'
+    grid[grid == 0] = 1.0#np.inf
+    grid[grid == 255] = 0.0
 
     # start is the first white block in the top row
-    start_j, = np.where(grid[0, :] == 1)
+    start_j, = np.where(grid[0, :] == 0)
     start = np.array([0, start_j[0]])
 
     # end is the first white block in the final column
-    end_i, = np.where(grid[:, -1] == 1)
+    end_i, = np.where(grid[:, -1] == 0)
     end = np.array([end_i[0], grid.shape[0] - 1])
 
     t0 = time()
     # set allow_diagonal=True to enable 8-connectivity
-    path = pyastar.astar_path(grid, start, end, allow_diagonal=False)
+    path = pyastar.astar_path(grid, start, end, allow_diagonal=True)
     dur = time() - t0
 
     if path.shape[0] > 0:
