@@ -34,7 +34,7 @@ def main():
 
     t0 = time()
     # set allow_diagonal=True to enable 8-connectivity
-    path = pyastar.astar_path(grid, start, end, allow_diagonal=True)
+    path = pyastar.weighted_astar_path(grid, start, end, allow_diagonal=True, wscale=4, niters=3)
     dur = time() - t0
 
     if path.shape[0] > 0:
